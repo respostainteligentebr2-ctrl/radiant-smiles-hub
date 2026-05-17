@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import clinic from "@/assets/clinic-about.jpg";
 import logoSquare from "@/assets/logo-square.png";
-import { services as svcStore, testimonials as tStore, type ServiceCard, type Testimonial } from "@/lib/store";
+import { services as svcStore, testimonials as tStore, settings as settingsStore, ensureSeed, type ServiceCard, type Testimonial } from "@/lib/store";
 import { toast } from "sonner";
 
 const PHONE_DISPLAY = "(31) 98361-9760";

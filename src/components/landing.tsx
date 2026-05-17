@@ -5,15 +5,24 @@ import {
 } from "lucide-react";
 import clinic from "@/assets/clinic-about.jpg";
 import logoSquare from "@/assets/logo-square.png";
-import { services as svcStore, testimonials as tStore, type ServiceCard, type Testimonial } from "@/lib/store";
+import { services as svcStore, testimonials as tStore, settings as settingsStore, ensureSeed, type ServiceCard, type Testimonial } from "@/lib/store";
 import { toast } from "sonner";
 
 const PHONE_DISPLAY = "(31) 98361-9760";
 const ADDRESS = "Av. Visconde de Ibituruna, 336 — Sala 107, Barreiro de Baixo";
 
 export function Hero({ onBook }: { onBook: () => void }) {
+  const [heroImage, setHeroImage] = useState<string>(logoSquare);
+  useEffect(() => {
+    ensureSeed();
+    const refresh = () => setHeroImage(settingsStore.get().heroImage || logoSquare);
+    refresh();
+    window.addEventListener("dcr-store-change", refresh);
+    return () => window.removeEventListener("dcr-store-change", refresh);
+  }, []);
+
   return (
-    <section className="relative overflow-hidden pt-24 sm:pt-28">
+    <section className="relative overflow-hidden pt-20 sm:pt-24">
       <div
         className="absolute inset-0 -z-10 opacity-60"
         style={{
@@ -21,27 +30,27 @@ export function Hero({ onBook }: { onBook: () => void }) {
             "radial-gradient(ellipse at top left, oklch(0.85 0.06 80 / 0.4), transparent 60%), radial-gradient(ellipse at bottom right, oklch(0.85 0.008 250 / 0.3), transparent 55%)",
         }}
       />
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-2 lg:items-center lg:gap-16 lg:px-8 lg:py-28">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-20 lg:grid-cols-2 lg:items-center lg:gap-14 lg:px-8 lg:py-24">
         <div className="fade-up order-2 lg:order-1">
           <span className="divider-gold">Odontologia de Excelência</span>
-          <h1 className="mt-6 text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 className="mt-5 text-3xl leading-[1.08] tracking-tight sm:text-4xl lg:text-5xl xl:text-6xl">
             Um sorriso que reflete{" "}
             <span className="text-gradient-gold italic">a sua melhor versão</span>.
           </h1>
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg">
             Atendimento personalizado, tecnologia de ponta e estética minimamente
             invasiva — para que cada detalhe do seu sorriso seja cuidado com
             arte e ciência.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <button onClick={onBook} className="btn-gold w-full rounded-full px-7 py-3.5 text-sm font-medium sm:w-auto">
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <button onClick={onBook} className="btn-gold w-full rounded-full px-7 py-3 text-sm font-medium sm:w-auto">
               Agendar consulta
             </button>
-            <button onClick={onBook} className="btn-outline-gold w-full rounded-full px-7 py-3.5 text-sm font-medium sm:w-auto">
+            <button onClick={onBook} className="btn-outline-gold w-full rounded-full px-7 py-3 text-sm font-medium sm:w-auto">
               Solicitar orçamento
             </button>
           </div>
-          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 text-xs text-muted-foreground">
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-muted-foreground">
             <Trust icon={<ShieldCheck strokeWidth={1.5} className="h-4 w-4 text-gold" />} text="CRO‑MG ativo" />
             <Trust icon={<Sparkles strokeWidth={1.5} className="h-4 w-4 text-gold" />} text="Tecnologia digital" />
             <Trust icon={<HeartHandshake strokeWidth={1.5} className="h-4 w-4 text-gold" />} text="Atendimento humanizado" />
@@ -49,19 +58,19 @@ export function Hero({ onBook }: { onBook: () => void }) {
         </div>
 
         <div className="fade-up order-1 lg:order-2">
-          <div className="relative mx-auto aspect-square w-full max-w-md">
-            <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-gradient-luxury opacity-25 blur-3xl" />
-            <div className="absolute inset-0 -z-10 rounded-[2.5rem] bg-gradient-to-br from-gold/10 via-transparent to-silver/10" />
-            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[2.5rem] border border-gold/30 bg-card p-8 shadow-soft sm:p-12">
+          <div className="relative mx-auto aspect-square w-full max-w-[280px] sm:max-w-xs lg:max-w-sm">
+            <div className="absolute -inset-5 -z-10 rounded-[2rem] bg-gradient-luxury opacity-25 blur-3xl" />
+            <div className="absolute inset-0 -z-10 rounded-[2rem] bg-gradient-to-br from-gold/10 via-transparent to-silver/10" />
+            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[2rem] border border-gold/30 bg-card p-6 shadow-soft sm:p-8">
               <img
-                src={logoSquare}
+                src={heroImage}
                 alt="Dra. Camila Resende — Odontologia"
                 className="h-full w-full object-contain"
               />
             </div>
-            <div className="absolute -bottom-6 -left-6 hidden rounded-2xl border border-border bg-card px-5 py-4 shadow-soft sm:block">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">Dra. Camila Resende</div>
-              <div className="font-serif text-lg">Cirurgiã‑Dentista</div>
+            <div className="absolute -bottom-5 -left-5 hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-soft sm:block">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Dra. Camila Resende</div>
+              <div className="font-serif text-base">Cirurgiã‑Dentista</div>
             </div>
           </div>
         </div>

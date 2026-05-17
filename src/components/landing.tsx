@@ -33,11 +33,11 @@ export function Hero({ onBook }: { onBook: () => void }) {
             invasiva — para que cada detalhe do seu sorriso seja cuidado com
             arte e ciência.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={onBook} className="btn-gold rounded-full px-7 py-3.5 text-sm font-medium">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <button onClick={onBook} className="btn-gold w-full rounded-full px-7 py-3.5 text-sm font-medium sm:w-auto">
               Agendar consulta
             </button>
-            <button onClick={onBook} className="btn-outline-gold rounded-full px-7 py-3.5 text-sm font-medium">
+            <button onClick={onBook} className="btn-outline-gold w-full rounded-full px-7 py-3.5 text-sm font-medium sm:w-auto">
               Solicitar orçamento
             </button>
           </div>

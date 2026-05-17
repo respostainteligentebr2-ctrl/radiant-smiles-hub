@@ -61,7 +61,12 @@ const KEYS = {
   appointments: "dcr_appointments",
   budgets: "dcr_budgets",
   testimonials: "dcr_testimonials",
+  settings: "dcr_settings",
 };
+
+export interface SiteSettings {
+  heroImage: string;
+}
 
 const isBrowser = typeof window !== "undefined";
 

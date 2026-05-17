@@ -65,10 +65,24 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
       service,
       notes,
     });
-    fetch("/api/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo: "agendamento", userId: user.id, userName: user.name, userEmail: user.email, date: format(date, "yyyy-MM-dd"), time, service, notes }) }).catch(() => {});
-    toast.success("Agendamento solicitado. Aguarde confirmação.");
-    onClose();
-  };
+
+fetch("/api/submissions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer 56a663c109bc122ebadf069911db6b060da704699517ad59ddad7f624b06a414"
+  },
+  body: JSON.stringify({
+    tipo: "agendamento",
+    userId: user.id,
+    userName: user.name,
+    userEmail: user.email,
+    date: format(date, "yyyy-MM-dd"),
+    time,
+    service,
+    notes
+  })
+}).catch(() => {});
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

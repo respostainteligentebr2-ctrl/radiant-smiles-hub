@@ -12,4 +12,11 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  vite: {
+    preview: {
+      host: "127.0.0.1",
+      port: 34567,
+      allowedHosts: ["camilaresende.com", "www.camilaresende.com"],
+    },
+  },
 });

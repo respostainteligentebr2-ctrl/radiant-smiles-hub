@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Calendar, FileText, Layers, LogOut, Trash2, Plus, Image as ImageIcon } from "lucide-react";
+import { Calendar, FileText, Layers, LogOut, Trash2, Plus, Image as ImageIcon, Palette, RotateCcw } from "lucide-react";
 import { useSession } from "@/lib/use-session";
 import {
   appointments as aStore, budgets as bStore, services as svcStore,
+  settings as settingsStore, DEFAULT_HERO_IMAGE,
   fileToBase64, logout, uid,
   type Appointment, type Budget, type ServiceCard,
 } from "@/lib/store";

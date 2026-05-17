@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Calendar, FileText, User as UserIcon, LogOut, Plus, ArrowLeft } from "lucide-react";
-import logo from "@/assets/logo-horizontal.png";
+import logo from "@/assets/logo-square.png";
 import { useSession } from "@/lib/use-session";
 import {
   appointments as aStore, budgets as bStore, fileToBase64, logout, updateUser,
@@ -68,7 +68,11 @@ export function PanelHeader({ title, subtitle }: { title: string; subtitle: stri
     <header className="border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3">
-          <img src={logo} alt="Logo" className="h-10 w-auto" />
+          <img src={logo} alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
+          <span className="hidden font-serif text-base leading-tight sm:block">
+            Dra. Camila Resende
+            <span className="block text-[10px] uppercase tracking-[0.22em] text-gold">Odontologia</span>
+          </span>
         </Link>
         <div className="text-right">
           <div className="text-xs uppercase tracking-widest text-gold">{title}</div>

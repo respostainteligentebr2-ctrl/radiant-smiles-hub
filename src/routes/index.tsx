@@ -4,9 +4,8 @@ import { Navbar } from "@/components/Navbar";
 import { Hero, About, Services, Differentials, Testimonials, FAQ, Contact, Footer } from "@/components/landing";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { AuthModal } from "@/components/AuthModal";
+import { BookingDialog } from "@/components/BookingDialog";
 import { Toaster } from "@/components/ui/sonner";
-import { useSession } from "@/lib/use-session";
-import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,24 +21,17 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [authOpen, setAuthOpen] = useState(false);
-  const { user } = useSession();
-  const navigate = useNavigate();
+  const [bookingOpen, setBookingOpen] = useState(false);
 
-  const requireAuth = () => {
-    if (user) {
-      navigate({ to: user.role === "admin" ? "/admin" : "/cliente" });
-    } else {
-      setAuthOpen(true);
-    }
-  };
+  const openBooking = () => setBookingOpen(true);
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar onLogin={() => setAuthOpen(true)} />
+      <Navbar onLogin={() => setAuthOpen(true)} onBook={openBooking} />
       <main>
-        <Hero onBook={requireAuth} />
+        <Hero onBook={openBooking} />
         <About />
-        <Services onBook={requireAuth} />
+        <Services onBook={openBooking} />
         <Differentials />
         <Testimonials />
         <FAQ />
@@ -47,12 +39,20 @@ function Index() {
       </main>
       <Footer />
       <WhatsAppButton />
+      <BookingDialog
+        open={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+        onRequireAuth={() => {
+          setBookingOpen(false);
+          setAuthOpen(true);
+        }}
+      />
       <AuthModal
         open={authOpen}
         onClose={() => setAuthOpen(false)}
         onSuccess={() => {
-          const u = JSON.parse(localStorage.getItem("dcr_session") || "null");
-          if (u) navigate({ to: "/cliente" });
+          setAuthOpen(false);
+          setBookingOpen(true);
         }}
       />
       <Toaster position="top-center" />

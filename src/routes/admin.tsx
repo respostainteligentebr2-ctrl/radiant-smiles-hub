@@ -301,3 +301,81 @@ function AdminServices() {
     </div>
   );
 }
+
+/* ----- Aparência ----- */
+
+function AdminAppearance() {
+  const [heroImage, setHeroImage] = useState<string>(DEFAULT_HERO_IMAGE);
+
+  useEffect(() => {
+    const refresh = () => setHeroImage(settingsStore.get().heroImage || DEFAULT_HERO_IMAGE);
+    refresh();
+    window.addEventListener("dcr-store-change", refresh);
+    return () => window.removeEventListener("dcr-store-change", refresh);
+  }, []);
+
+  const persist = (img: string) => {
+    settingsStore.save({ ...settingsStore.get(), heroImage: img });
+  };
+
+  const onFile = async (file?: File) => {
+    if (!file) return;
+    if (file.size > 2_500_000) return toast.error("Imagem deve ter até 2.5MB.");
+    const b64 = await fileToBase64(file);
+    persist(b64);
+    toast.success("Imagem do Hero atualizada.");
+  };
+
+  const onUrl = (url: string) => {
+    persist(url);
+  };
+
+  const reset = () => {
+    persist(DEFAULT_HERO_IMAGE);
+    toast.success("Imagem restaurada para o padrão.");
+  };
+
+  return (
+    <div>
+      <SectionTitle title="Aparência da página inicial" />
+      <p className="mt-2 text-sm text-muted-foreground">
+        Personalize a imagem em destaque exibida no Hero da página inicial.
+      </p>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pré-visualização</div>
+          <div className="mt-3 flex aspect-square w-full max-w-sm items-center justify-center overflow-hidden rounded-3xl border border-gold/30 bg-card p-6 shadow-soft">
+            <img src={heroImage} alt="Hero" className="h-full w-full object-contain" />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <Field label="URL da imagem">
+            <input
+              value={heroImage.startsWith("data:") ? "(arquivo enviado)" : heroImage}
+              onChange={(e) => onUrl(e.target.value)}
+              className={inputCls}
+              placeholder="https://..."
+            />
+          </Field>
+          <div>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gold/50 px-4 py-2 text-sm text-foreground hover:bg-gold/10">
+              <ImageIcon className="h-4 w-4" strokeWidth={1.5} /> Enviar arquivo
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+            </label>
+          </div>
+          <button
+            onClick={reset}
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="h-4 w-4" strokeWidth={1.5} /> Restaurar padrão
+          </button>
+          <p className="text-xs text-muted-foreground">
+            Dica: use imagens quadradas (1:1) com fundo neutro para o melhor enquadramento.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -16,7 +16,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPanel,
 });
 
-type Tab = "agendamentos" | "orcamentos" | "servicos";
+type Tab = "agendamentos" | "orcamentos" | "servicos" | "aparencia";
 
 function AdminPanel() {
   const { user, ready } = useSession();

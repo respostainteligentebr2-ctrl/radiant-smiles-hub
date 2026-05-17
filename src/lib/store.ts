@@ -3,6 +3,7 @@ import serviceWhitening from "@/assets/service-whitening.jpg";
 import serviceVeneers from "@/assets/service-veneers.jpg";
 import serviceAligners from "@/assets/service-aligners.jpg";
 import serviceImplants from "@/assets/service-implants.jpg";
+import logoSquare from "@/assets/logo-square.png";
 
 export type Role = "cliente" | "admin";
 

@@ -38,6 +38,7 @@ function AdminPanel() {
             <NavBtn active={tab === "agendamentos"} onClick={() => setTab("agendamentos")} icon={<Calendar className="h-4 w-4" strokeWidth={1.5} />}>Agendamentos</NavBtn>
             <NavBtn active={tab === "orcamentos"} onClick={() => setTab("orcamentos")} icon={<FileText className="h-4 w-4" strokeWidth={1.5} />}>Orçamentos</NavBtn>
             <NavBtn active={tab === "servicos"} onClick={() => setTab("servicos")} icon={<Layers className="h-4 w-4" strokeWidth={1.5} />}>Cards de Serviços</NavBtn>
+            <NavBtn active={tab === "aparencia"} onClick={() => setTab("aparencia")} icon={<Palette className="h-4 w-4" strokeWidth={1.5} />}>Aparência</NavBtn>
             <button
               onClick={() => { logout(); navigate({ to: "/" }); }}
               className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-secondary"
@@ -51,6 +52,7 @@ function AdminPanel() {
           {tab === "agendamentos" && <AdminAppointments />}
           {tab === "orcamentos" && <AdminBudgets />}
           {tab === "servicos" && <AdminServices />}
+          {tab === "aparencia" && <AdminAppearance />}
         </section>
       </div>
       <Toaster position="top-center" />

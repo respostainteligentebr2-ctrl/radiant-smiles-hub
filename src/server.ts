@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { loadState, saveState } from "./lib/db";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -66,9 +67,48 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+async function handleApiState(request: Request): Promise<Response> {
+  if (request.method === "GET") {
+    const state = loadState();
+    return new Response(JSON.stringify(state), {
+      status: 200,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  if (request.method === "POST") {
+    try {
+      const payload = await request.json();
+      if (payload && typeof payload === "object") {
+        saveState(payload as Record<string, unknown>);
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to save API state:", error);
+    }
+    return new Response(JSON.stringify({ ok: false }), {
+      status: 400,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  return new Response(JSON.stringify({ message: "Method not allowed" }), {
+    status: 405,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      if (url.pathname === "/api/state") {
+        return await handleApiState(request);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

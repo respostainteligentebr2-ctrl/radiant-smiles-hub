@@ -1,4 +1,4 @@
-// Local storage data layer (no backend)
+// Local storage data layer with optional VPS-backed persistence.
 import serviceWhitening from "@/assets/service-whitening.jpg";
 import serviceVeneers from "@/assets/service-veneers.jpg";
 import serviceAligners from "@/assets/service-aligners.jpg";
@@ -63,7 +63,17 @@ const KEYS = {
   budgets: "dcr_budgets",
   testimonials: "dcr_testimonials",
   settings: "dcr_settings",
-};
+} as const;
+
+const SERVER_STATE_URL = "/api/state";
+const REMOTE_KEYS = [
+  KEYS.users,
+  KEYS.services,
+  KEYS.appointments,
+  KEYS.budgets,
+  KEYS.testimonials,
+  KEYS.settings,
+];
 
 export interface SiteSettings {
   heroImage: string;
@@ -85,6 +95,60 @@ function write<T>(key: string, value: T) {
   if (!isBrowser) return;
   localStorage.setItem(key, JSON.stringify(value));
   window.dispatchEvent(new CustomEvent("dcr-store-change", { detail: key }));
+  syncStateToServer();
+}
+
+function writeRaw<T>(key: string, value: T) {
+  if (!isBrowser) return;
+  localStorage.setItem(key, JSON.stringify(value));
+  window.dispatchEvent(new CustomEvent("dcr-store-change", { detail: key }));
+}
+
+function getFullState() {
+  return {
+    [KEYS.users]: read<User[]>(KEYS.users, []),
+    [KEYS.services]: read<ServiceCard[]>(KEYS.services, []),
+    [KEYS.appointments]: read<Appointment[]>(KEYS.appointments, []),
+    [KEYS.budgets]: read<Budget[]>(KEYS.budgets, []),
+    [KEYS.testimonials]: read<Testimonial[]>(KEYS.testimonials, []),
+    [KEYS.settings]: read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE }),
+  };
+}
+
+async function fetchServerState(): Promise<Record<string, unknown> | null> {
+  if (!isBrowser) return null;
+  try {
+    const response = await fetch(SERVER_STATE_URL, {
+      method: "GET",
+      headers: { "content-type": "application/json" },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+async function syncStateToServer() {
+  if (!isBrowser) return;
+  try {
+    await fetch(SERVER_STATE_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(getFullState()),
+    });
+  } catch {
+    // Best effort; keep local data if server sync fails.
+  }
+}
+
+function hydrateLocalFromServer(serverState: Record<string, unknown>) {
+  if (!isBrowser) return;
+  for (const key of REMOTE_KEYS) {
+    if (typeof serverState[key] !== "undefined") {
+      writeRaw(key, serverState[key] as unknown);
+    }
+  }
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -153,8 +217,13 @@ const DEFAULT_TESTIMONIALS: Testimonial[] = [
 
 export const DEFAULT_HERO_IMAGE = logoSquare;
 
-export function ensureSeed() {
+export async function ensureSeed() {
   if (!isBrowser) return;
+  const serverState = await fetchServerState();
+  if (serverState) {
+    hydrateLocalFromServer(serverState);
+  }
+
   const users = read<User[]>(KEYS.users, []);
   if (!users.find((u) => u.email === ADMIN.email)) {
     write(KEYS.users, [...users, ADMIN]);
@@ -164,6 +233,8 @@ export function ensureSeed() {
   if (!localStorage.getItem(KEYS.appointments)) write(KEYS.appointments, []);
   if (!localStorage.getItem(KEYS.budgets)) write(KEYS.budgets, []);
   if (!localStorage.getItem(KEYS.settings)) write(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE });
+
+  await syncStateToServer();
 }
 
 export const settings = {

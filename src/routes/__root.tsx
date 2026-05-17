@@ -118,7 +118,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <div className="app-scale">
+        <Outlet />
+      </div>
     </QueryClientProvider>
   );
 }

@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Hero, About, Services, Differentials, Testimonials, FAQ, Contact, Footer } from "@/components/landing";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
@@ -21,7 +21,21 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [authOpen, setAuthOpen] = useState(false);
+  const [adminAuthOpen, setAdminAuthOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleHotkey = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        setAdminAuthOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleHotkey);
+    return () => window.removeEventListener("keydown", handleHotkey);
+  }, []);
 
   const openBooking = () => setBookingOpen(true);
 
@@ -54,6 +68,15 @@ function Index() {
           setAuthOpen(false);
           setBookingOpen(true);
         }}
+      />
+      <AuthModal
+        open={adminAuthOpen}
+        onClose={() => setAdminAuthOpen(false)}
+        onSuccess={() => {
+          setAdminAuthOpen(false);
+          navigate({ to: "/admin" });
+        }}
+        adminOnly
       />
       <Toaster position="top-center" />
     </div>

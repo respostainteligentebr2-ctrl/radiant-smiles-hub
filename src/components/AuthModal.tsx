@@ -7,17 +7,22 @@ export function AuthModal({
   open,
   onClose,
   onSuccess,
+  adminOnly = false,
 }: {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  adminOnly?: boolean;
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
 
   useEffect(() => {
-    if (open) setForm({ name: "", email: "", phone: "", password: "" });
-  }, [open]);
+    if (open) {
+      setForm({ name: "", email: "", phone: "", password: "" });
+      if (adminOnly) setMode("login");
+    }
+  }, [open, adminOnly]);
 
   if (!open) return null;
 
@@ -58,11 +63,13 @@ export function AuthModal({
         <div className="mb-6 text-center">
           <span className="divider-gold">Acesso</span>
           <h2 className="mt-3 text-3xl">
-            {mode === "login" ? "Entrar" : "Criar conta"}
+            {mode === "login" ? (adminOnly ? "Login de gestão" : "Entrar") : "Criar conta"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "login"
-              ? "Acesse sua área de cliente"
+              ? adminOnly
+                ? "Abra este modal com Ctrl+Shift+R e use suas credenciais de gestão."
+                : "Acesse sua área de cliente"
               : "Cadastre-se para agendar e solicitar orçamentos"}
           </p>
         </div>
@@ -103,34 +110,31 @@ export function AuthModal({
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          {mode === "login" ? (
-            <>
-              Não tem conta?{" "}
-              <button
-                onClick={() => setMode("register")}
-                className="font-medium text-gold underline-offset-4 hover:underline"
-              >
-                Cadastre-se
-              </button>
-            </>
-          ) : (
-            <>
-              Já tem conta?{" "}
-              <button
-                onClick={() => setMode("login")}
-                className="font-medium text-gold underline-offset-4 hover:underline"
-              >
-                Entrar
-              </button>
-            </>
-          )}
-        </div>
-
-        <p className="mt-4 rounded-lg bg-secondary/60 p-3 text-center text-xs text-muted-foreground">
-          Acesso admin: <code className="font-mono">admin@draresende.com</code> /{" "}
-          <code className="font-mono">Admin123</code>
-        </p>
+        {!adminOnly && (
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            {mode === "login" ? (
+              <>
+                Não tem conta?{" "}
+                <button
+                  onClick={() => setMode("register")}
+                  className="font-medium text-gold underline-offset-4 hover:underline"
+                >
+                  Cadastre-se
+                </button>
+              </>
+            ) : (
+              <>
+                Já tem conta?{" "}
+                <button
+                  onClick={() => setMode("login")}
+                  className="font-medium text-gold underline-offset-4 hover:underline"
+                >
+                  Entrar
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -306,34 +306,42 @@ function AdminServices() {
 
 function AdminAppearance() {
   const [heroImage, setHeroImage] = useState<string>(DEFAULT_HERO_IMAGE);
+  const [pendingHeroImage, setPendingHeroImage] = useState<string>(DEFAULT_HERO_IMAGE);
 
   useEffect(() => {
-    const refresh = () => setHeroImage(settingsStore.get().heroImage || DEFAULT_HERO_IMAGE);
+    const refresh = () => {
+      const current = settingsStore.get().heroImage || DEFAULT_HERO_IMAGE;
+      setHeroImage(current);
+      setPendingHeroImage(current);
+    };
     refresh();
     window.addEventListener("dcr-store-change", refresh);
     return () => window.removeEventListener("dcr-store-change", refresh);
   }, []);
 
-  const persist = (img: string) => {
-    settingsStore.save({ ...settingsStore.get(), heroImage: img });
+  const saveChanges = () => {
+    settingsStore.save({ ...settingsStore.get(), heroImage: pendingHeroImage });
+    setHeroImage(pendingHeroImage);
+    toast.success("Imagem do Hero salva.");
   };
 
   const onFile = async (file?: File) => {
     if (!file) return;
     if (file.size > 2_500_000) return toast.error("Imagem deve ter até 2.5MB.");
     const b64 = await fileToBase64(file);
-    persist(b64);
-    toast.success("Imagem do Hero atualizada.");
+    setPendingHeroImage(b64);
+    toast.success("Arquivo carregado. Clique em salvar para confirmar.");
   };
 
   const onUrl = (url: string) => {
-    persist(url);
+    setPendingHeroImage(url);
   };
 
   const reset = () => {
-    persist(DEFAULT_HERO_IMAGE);
-    toast.success("Imagem restaurada para o padrão.");
+    setPendingHeroImage(DEFAULT_HERO_IMAGE);
   };
+
+  const hasChanges = pendingHeroImage !== heroImage;
 
   return (
     <div>
@@ -346,14 +354,14 @@ function AdminAppearance() {
         <div>
           <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pré-visualização</div>
           <div className="mt-3 flex aspect-square w-full max-w-sm items-center justify-center overflow-hidden rounded-3xl border border-gold/30 bg-card p-6 shadow-soft">
-            <img src={heroImage} alt="Hero" className="h-full w-full object-contain" />
+            <img src={pendingHeroImage} alt="Hero" className="h-full w-full object-contain" />
           </div>
         </div>
 
         <div className="space-y-4">
           <Field label="URL da imagem">
             <input
-              value={heroImage.startsWith("data:") ? "(arquivo enviado)" : heroImage}
+              value={pendingHeroImage.startsWith("data:") ? "(arquivo enviado)" : pendingHeroImage}
               onChange={(e) => onUrl(e.target.value)}
               className={inputCls}
               placeholder="https://..."
@@ -365,12 +373,26 @@ function AdminAppearance() {
               <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
             </label>
           </div>
-          <button
-            onClick={reset}
-            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="h-4 w-4" strokeWidth={1.5} /> Restaurar padrão
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              onClick={saveChanges}
+              disabled={!hasChanges}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${hasChanges ? "btn-gold text-black" : "border border-border bg-muted/20 text-muted-foreground cursor-not-allowed"}`}
+            >
+              <Palette className="h-4 w-4" strokeWidth={1.5} /> Salvar alterações
+            </button>
+            <button
+              onClick={reset}
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-4 w-4" strokeWidth={1.5} /> Redefinir
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {hasChanges
+              ? "Alterações pendentes. Clique em salvar para confirmar." 
+              : "Nenhuma alteração pendente."}
+          </p>
           <p className="text-xs text-muted-foreground">
             Dica: use imagens quadradas (1:1) com fundo neutro para o melhor enquadramento.
           </p>

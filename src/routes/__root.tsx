@@ -75,6 +75,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Dra. Camila Resende — Odontologia" },
       { name: "description", content: "Odontologia estética e reabilitação oral em Belo Horizonte." },
       { property: "og:type", content: "website" },
+      { property: "og:title", content: "Dra. Camila Resende — Odontologia" },
+      { name: "twitter:title", content: "Dra. Camila Resende — Odontologia" },
+      { property: "og:description", content: "Odontologia estética e reabilitação oral em Belo Horizonte." },
+      { name: "twitter:description", content: "Odontologia estética e reabilitação oral em Belo Horizonte." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/B0u68Q6pYdNNJVJlvNyW43vb38u2/social-images/social-1779040128715-logohorizontal.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/B0u68Q6pYdNNJVJlvNyW43vb38u2/social-images/social-1779040128715-logohorizontal.webp" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

@@ -66,30 +66,33 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
       notes,
     });
 
-fetch("/api/submissions", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer 56a663c109bc122ebadf069911db6b060da704699517ad59ddad7f624b06a414"
-  },
-  body: JSON.stringify({
-    tipo: "agendamento",
-    userId: user.id,
-    userName: user.name,
-    userEmail: user.email,
-    date: format(date, "yyyy-MM-dd"),
-    time,
-    service,
-    notes
-  })
-}).catch(() => {});
+    fetch("/api/submissions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer 56a663c109bc122ebadf069911db6b060da704699517ad59ddad7f624b06a414"
+      },
+      body: JSON.stringify({
+        tipo: "agendamento",
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        date: format(date, "yyyy-MM-dd"),
+        time,
+        service,
+        notes
+      })
+    }).catch(() => {});
+
+    toast.success("Agendamento solicitado. Aguarde confirmação.");
+    onClose();
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0 sm:rounded-3xl">
         <DialogTitle className="sr-only">Agendar consulta</DialogTitle>
         <div className="grid md:grid-cols-[1.05fr_1fr]">
-          {/* Side panel */}
           <aside className="relative hidden flex-col justify-between bg-gradient-luxury p-8 text-white md:flex">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] backdrop-blur">
@@ -128,7 +131,6 @@ fetch("/api/submissions", {
             </div>
           </aside>
 
-          {/* Step content */}
           <div className="flex max-h-[85vh] flex-col overflow-y-auto p-6 sm:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>

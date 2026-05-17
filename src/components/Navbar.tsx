@@ -13,7 +13,7 @@ const NAV = [
   { label: "Contato", to: "/", hash: "#contato" },
 ];
 
-export function Navbar({ onLogin }: { onLogin: () => void }) {
+export function Navbar({ onLogin, onBook }: { onLogin: () => void; onBook: () => void }) {
   const [open, setOpen] = useState(false);
   const { user } = useSession();
   const loc = useLocation();
@@ -66,12 +66,12 @@ export function Navbar({ onLogin }: { onLogin: () => void }) {
               >
                 Entrar
               </button>
-              <a
-                href="#contato"
+              <button
+                onClick={onBook}
                 className="btn-gold rounded-full px-5 py-2.5 text-sm font-medium"
               >
                 Agendar consulta
-              </a>
+              </button>
             </>
           )}
         </div>
@@ -123,13 +123,12 @@ export function Navbar({ onLogin }: { onLogin: () => void }) {
                   >
                     Entrar / Cadastrar
                   </button>
-                  <a
-                    href="#contato"
-                    onClick={() => setOpen(false)}
+                  <button
+                    onClick={() => { onBook(); setOpen(false); }}
                     className="btn-gold rounded-full px-5 py-2.5 text-center text-sm font-medium"
                   >
                     Agendar consulta
-                  </a>
+                  </button>
                 </>
               )}
             </div>

@@ -115,7 +115,7 @@ function getFullState() {
   };
 }
 
-async function fetchServerState(): Promise<Record<string, unknown> | null> {
+async function fetchServerState(): Promise<Record<string, unknown> | null> { return null;
   if (!isBrowser) return null;
   try {
     const response = await fetch(SERVER_STATE_URL, {
@@ -129,7 +129,7 @@ async function fetchServerState(): Promise<Record<string, unknown> | null> {
   }
 }
 
-async function syncStateToServer() {
+async function syncStateToServer() { return;
   if (!isBrowser) return;
   try {
     await fetch(SERVER_STATE_URL, {

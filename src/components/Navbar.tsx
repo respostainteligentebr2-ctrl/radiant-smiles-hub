@@ -1,7 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X, User as UserIcon } from "lucide-react";
-import logo from "@/assets/logo-horizontal.png";
+import logoSquare from "@/assets/logo-square.png";
 import { useSession } from "@/lib/use-session";
 import { logout } from "@/lib/store";
 
@@ -21,8 +21,12 @@ export function Navbar({ onLogin }: { onLogin: () => void }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Dra. Camila Resende Odontologia" className="h-10 w-auto sm:h-12" />
+        <Link to="/" className="flex items-center gap-3">
+          <img src={logoSquare} alt="Dra. Camila Resende Odontologia" className="h-11 w-11 rounded-lg object-contain sm:h-12 sm:w-12" />
+          <span className="hidden font-serif text-base leading-tight sm:block">
+            Dra. Camila Resende
+            <span className="block text-[10px] uppercase tracking-[0.22em] text-gold">Odontologia</span>
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex">

@@ -3,7 +3,6 @@ import {
   ShieldCheck, Sparkles, HeartHandshake, Clock, ChevronDown,
   MapPin, Phone, Mail, Instagram, Facebook,
 } from "lucide-react";
-import dra from "@/assets/dra-camila.jpg";
 import clinic from "@/assets/clinic-about.jpg";
 import logoSquare from "@/assets/logo-square.png";
 import { services as svcStore, testimonials as tStore, type ServiceCard, type Testimonial } from "@/lib/store";
@@ -50,10 +49,15 @@ export function Hero({ onBook }: { onBook: () => void }) {
         </div>
 
         <div className="fade-up order-1 lg:order-2">
-          <div className="relative mx-auto max-w-md">
-            <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-luxury opacity-20 blur-2xl" />
-            <div className="overflow-hidden rounded-[2rem] border border-gold/30 shadow-soft">
-              <img src={dra} alt="Dra. Camila Resende" className="h-full w-full object-cover" />
+          <div className="relative mx-auto aspect-square w-full max-w-md">
+            <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-gradient-luxury opacity-25 blur-3xl" />
+            <div className="absolute inset-0 -z-10 rounded-[2.5rem] bg-gradient-to-br from-gold/10 via-transparent to-silver/10" />
+            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[2.5rem] border border-gold/30 bg-card p-8 shadow-soft sm:p-12">
+              <img
+                src={logoSquare}
+                alt="Dra. Camila Resende — Odontologia"
+                className="h-full w-full object-contain"
+              />
             </div>
             <div className="absolute -bottom-6 -left-6 hidden rounded-2xl border border-border bg-card px-5 py-4 shadow-soft sm:block">
               <div className="text-xs uppercase tracking-widest text-muted-foreground">Dra. Camila Resende</div>

@@ -151,6 +151,8 @@ const DEFAULT_TESTIMONIALS: Testimonial[] = [
   },
 ];
 
+export const DEFAULT_HERO_IMAGE = logoSquare;
+
 export function ensureSeed() {
   if (!isBrowser) return;
   const users = read<User[]>(KEYS.users, []);
@@ -161,7 +163,13 @@ export function ensureSeed() {
   if (!localStorage.getItem(KEYS.testimonials)) write(KEYS.testimonials, DEFAULT_TESTIMONIALS);
   if (!localStorage.getItem(KEYS.appointments)) write(KEYS.appointments, []);
   if (!localStorage.getItem(KEYS.budgets)) write(KEYS.budgets, []);
+  if (!localStorage.getItem(KEYS.settings)) write(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE });
 }
+
+export const settings = {
+  get: (): SiteSettings => read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE }),
+  save: (s: SiteSettings) => write(KEYS.settings, s),
+};
 
 /* ---------- Auth ---------- */
 

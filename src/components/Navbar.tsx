@@ -41,48 +41,47 @@ export function Navbar({ onLogin, onBook }: { onLogin: () => void; onBook: () =>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="flex items-center gap-2 sm:gap-3">
           {user ? (
             <>
               <Link
                 to={user.role === "admin" ? "/admin" : "/cliente"}
-                className="inline-flex items-center gap-2 rounded-full border border-gold/60 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-gold/10"
+                className="hidden items-center gap-2 rounded-full border border-gold/60 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-gold/10 lg:inline-flex"
               >
                 <UserIcon className="h-4 w-4" strokeWidth={1.5} />
                 {user.role === "admin" ? "Painel" : "Minha conta"}
               </Link>
               <button
                 onClick={() => { logout(); }}
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="hidden text-sm text-muted-foreground hover:text-foreground lg:inline-flex"
               >
                 Sair
               </button>
             </>
           ) : (
-            <>
-              <button
-                onClick={onLogin}
-                className="text-sm font-medium text-foreground/80 transition hover:text-gold"
-              >
-                Entrar
-              </button>
-              <button
-                onClick={onBook}
-                className="btn-gold rounded-full px-5 py-2.5 text-sm font-medium"
-              >
-                Agendar consulta
-              </button>
-            </>
+            <button
+              onClick={onLogin}
+              className="hidden text-sm font-medium text-foreground/80 transition hover:text-gold lg:inline-flex"
+            >
+              Entrar
+            </button>
           )}
-        </div>
+          <button
+            onClick={onBook}
+            className="btn-gold rounded-full px-4 py-2 text-xs font-medium sm:px-5 sm:py-2.5 sm:text-sm"
+          >
+            Agendar
+            <span className="hidden sm:inline">&nbsp;consulta</span>
+          </button>
 
-        <button
-          onClick={() => setOpen(!open)}
-          className="rounded-md p-2 text-foreground lg:hidden"
-          aria-label="Menu"
-        >
-          {open ? <X strokeWidth={1.5} /> : <Menu strokeWidth={1.5} />}
-        </button>
+          <button
+            onClick={() => setOpen(!open)}
+            className="rounded-md p-2 text-foreground lg:hidden"
+            aria-label="Menu"
+          >
+            {open ? <X strokeWidth={1.5} /> : <Menu strokeWidth={1.5} />}
+          </button>
+        </div>
       </div>
 
       {open && (

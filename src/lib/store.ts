@@ -14,6 +14,7 @@ export interface User {
   name: string;
   phone?: string;
   role: Role;
+  manager?: string;
 }
 
 export interface ServiceCard {
@@ -28,11 +29,14 @@ export interface Appointment {
   userId: string;
   userName: string;
   userEmail: string;
+  professionalId?: string;
+  professionalName?: string;
   date: string;
   time: string;
   service: string;
   notes?: string;
   status: "agendado" | "confirmado" | "realizado" | "cancelado";
+  googleEventId?: string;
   createdAt: string;
 }
 
@@ -45,6 +49,36 @@ export interface Budget {
   attachment?: string;
   status: "pendente" | "respondido";
   reply?: string;
+  createdAt: string;
+}
+
+export interface Charge {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  amount: number;
+  dueDate: string;
+  type: string;
+  pixKey?: string;
+  notes?: string;
+  status: "pendente" | "enviado" | "pago";
+  sentVia?: "whatsapp" | "email";
+  createdAt: string;
+}
+
+export interface Professional {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  cro?: string;
+  specialties: string[];
+  businessDays: number[];
+  startTime: string;
+  endTime: string;
+  intervalMinutes: number;
   createdAt: string;
 }
 
@@ -61,6 +95,8 @@ const KEYS = {
   services: "dcr_services",
   appointments: "dcr_appointments",
   budgets: "dcr_budgets",
+  charges: "dcr_charges",
+  professionals: "dcr_professionals",
   testimonials: "dcr_testimonials",
   settings: "dcr_settings",
 } as const;
@@ -71,12 +107,18 @@ const REMOTE_KEYS = [
   KEYS.services,
   KEYS.appointments,
   KEYS.budgets,
+  KEYS.charges,
+  KEYS.professionals,
   KEYS.testimonials,
   KEYS.settings,
 ];
 
 export interface SiteSettings {
   heroImage: string;
+  businessDays: number[];
+  startTime: string;
+  endTime: string;
+  intervalMinutes: number;
 }
 
 const isBrowser = typeof window !== "undefined";
@@ -110,8 +152,10 @@ function getFullState() {
     [KEYS.services]: read<ServiceCard[]>(KEYS.services, []),
     [KEYS.appointments]: read<Appointment[]>(KEYS.appointments, []),
     [KEYS.budgets]: read<Budget[]>(KEYS.budgets, []),
+    [KEYS.charges]: read<Charge[]>(KEYS.charges, []),
+    [KEYS.professionals]: read<Professional[]>(KEYS.professionals, []),
     [KEYS.testimonials]: read<Testimonial[]>(KEYS.testimonials, []),
-    [KEYS.settings]: read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE }),
+    [KEYS.settings]: { ...DEFAULT_SETTINGS, ...read<Partial<SiteSettings>>(KEYS.settings, {}) },
   };
 }
 
@@ -217,6 +261,14 @@ const DEFAULT_TESTIMONIALS: Testimonial[] = [
 
 export const DEFAULT_HERO_IMAGE = logoSquare;
 
+export const DEFAULT_SETTINGS: SiteSettings = {
+  heroImage: DEFAULT_HERO_IMAGE,
+  businessDays: [1, 2, 3, 4, 5],
+  startTime: "09:00",
+  endTime: "18:00",
+  intervalMinutes: 60,
+};
+
 export async function ensureSeed() {
   if (!isBrowser) return;
   const serverState = await fetchServerState();
@@ -232,27 +284,52 @@ export async function ensureSeed() {
   if (!localStorage.getItem(KEYS.testimonials)) write(KEYS.testimonials, DEFAULT_TESTIMONIALS);
   if (!localStorage.getItem(KEYS.appointments)) write(KEYS.appointments, []);
   if (!localStorage.getItem(KEYS.budgets)) write(KEYS.budgets, []);
-  if (!localStorage.getItem(KEYS.settings)) write(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE });
+  if (!localStorage.getItem(KEYS.charges)) write(KEYS.charges, []);
+  if (!localStorage.getItem(KEYS.professionals)) write(KEYS.professionals, []);
+  if (!localStorage.getItem(KEYS.settings))
+    write(KEYS.settings, {
+      heroImage: DEFAULT_HERO_IMAGE,
+      businessDays: [1, 2, 3, 4, 5],
+      startTime: "09:00",
+      endTime: "18:00",
+      intervalMinutes: 60,
+    });
 
   await syncStateToServer();
 }
 
 export const settings = {
-  get: (): SiteSettings => read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE }),
+  get: (): SiteSettings => ({
+    ...DEFAULT_SETTINGS,
+    ...read<Partial<SiteSettings>>(KEYS.settings, {}),
+  }),
   save: (s: SiteSettings) => write(KEYS.settings, s),
 };
 
 /* ---------- Auth ---------- */
 
-export function getUsers() { return read<User[]>(KEYS.users, []); }
-export function saveUsers(u: User[]) { write(KEYS.users, u); }
+export function getUsers() {
+  return read<User[]>(KEYS.users, []);
+}
+export function saveUsers(u: User[]) {
+  write(KEYS.users, u);
+}
 
 export function getSession(): User | null {
   const id = read<string | null>(KEYS.session, null);
   if (!id) return null;
   return getUsers().find((u) => u.id === id) ?? null;
 }
-export function setSession(id: string | null) { write(KEYS.session, id); }
+export function setSession(id: string | null) {
+  write(KEYS.session, id);
+}
+
+export function addUser(data: Omit<User, "id" | "role">): User {
+  const users = getUsers();
+  const user: User = { ...data, id: uid(), role: "cliente" };
+  saveUsers([...users, user]);
+  return user;
+}
 
 export function login(email: string, password: string): User | null {
   const u = getUsers().find(
@@ -278,7 +355,9 @@ export function updateUser(id: string, patch: Partial<User>) {
   saveUsers(users);
 }
 
-export function logout() { setSession(null); }
+export function logout() {
+  setSession(null);
+}
 
 /* ---------- CRUD helpers ---------- */
 
@@ -319,6 +398,46 @@ export const budgets = {
     };
     write(KEYS.budgets, [full, ...budgets.list()]);
     return full;
+  },
+};
+
+export const charges = {
+  list: () => read<Charge[]>(KEYS.charges, []),
+  save: (list: Charge[]) => write(KEYS.charges, list),
+  add: (c: Omit<Charge, "id" | "createdAt" | "status">) => {
+    const full: Charge = {
+      ...c,
+      id: uid(),
+      status: "pendente",
+      createdAt: new Date().toISOString(),
+    };
+    write(KEYS.charges, [full, ...charges.list()]);
+    return full;
+  },
+};
+
+export const professionals = {
+  list: () => read<Professional[]>(KEYS.professionals, []),
+  save: (list: Professional[]) => write(KEYS.professionals, list),
+  add: (p: Omit<Professional, "id" | "createdAt">) => {
+    const full: Professional = {
+      ...p,
+      id: uid(),
+      createdAt: new Date().toISOString(),
+    };
+    write(KEYS.professionals, [full, ...professionals.list()]);
+    return full;
+  },
+  update: (id: string, patch: Partial<Professional>) => {
+    const list = professionals.list().map((p) => (p.id === id ? { ...p, ...patch } : p));
+    write(KEYS.professionals, list);
+    return list.find((p) => p.id === id) ?? null;
+  },
+  remove: (id: string) => {
+    write(
+      KEYS.professionals,
+      professionals.list().filter((p) => p.id !== id),
+    );
   },
 };
 

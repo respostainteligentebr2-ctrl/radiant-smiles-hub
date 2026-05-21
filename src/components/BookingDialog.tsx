@@ -5,7 +5,11 @@ import { CalendarDays, Clock, Check, ArrowRight, ArrowLeft, Sparkles } from "luc
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { appointments as aStore } from "@/lib/store";
+import {
+  appointments as aStore,
+  professionals as professionalsStore,
+  settings as settingsStore,
+} from "@/lib/store";
 import { useSession } from "@/lib/use-session";
 import { toast } from "sonner";
 
@@ -17,7 +21,6 @@ const SERVICES = [
   "Implantes",
   "Limpeza",
 ];
-const TIMES = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
 type Props = {
   open: boolean;
@@ -30,9 +33,18 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
   const { user } = useSession();
   const [step, setStep] = useState(0);
   const [service, setService] = useState(defaultService ?? "Avaliação");
+  const [professionalId, setProfessionalId] = useState("");
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string>("");
   const [notes, setNotes] = useState("");
+
+  const professionals = professionalsStore.list();
+
+  useEffect(() => {
+    if (professionals.length && !professionalId) {
+      setProfessionalId(professionals[0].id);
+    }
+  }, [professionals, professionalId]);
 
   useEffect(() => {
     if (open) {
@@ -45,21 +57,52 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
   }, [open, defaultService]);
 
   const todayMin = useMemo(() => {
-    const d = new Date(); d.setHours(0, 0, 0, 0); return d;
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
   }, []);
 
-  const canNext =
-    (step === 0 && !!service) ||
-    (step === 1 && !!date && !!time) ||
-    step === 2;
+  const settings = settingsStore.get();
+  const selectedProfessional = professionals.find((p) => p.id === professionalId);
+  const schedule = selectedProfessional ?? settings;
+
+  const availableTimes = useMemo(() => {
+    const [startHour, startMinute] = schedule.startTime.split(":").map(Number);
+    const [endHour, endMinute] = schedule.endTime.split(":").map(Number);
+    const interval = Math.max(15, schedule.intervalMinutes ?? 60);
+    const start = new Date();
+    start.setHours(startHour, startMinute, 0, 0);
+    const end = new Date();
+    end.setHours(endHour, endMinute, 0, 0);
+    const times: string[] = [];
+    const current = new Date(start);
+    while (current < end) {
+      times.push(
+        `${String(current.getHours()).padStart(2, "0")}:${String(current.getMinutes()).padStart(2, "0")}`,
+      );
+      current.setMinutes(current.getMinutes() + interval);
+      if (current.getHours() > 23) break;
+    }
+    return times;
+  }, [schedule.startTime, schedule.endTime, schedule.intervalMinutes]);
+
+  const isBusinessDay = (value?: Date) =>
+    value ? schedule.businessDays.includes(value.getDay()) : false;
+
+  const canNext = (step === 0 && !!service) || (step === 1 && !!date && !!time) || step === 2;
 
   const confirm = () => {
-    if (!user) { onRequireAuth(); return; }
+    if (!user) {
+      onRequireAuth();
+      return;
+    }
     if (!date || !time) return;
     aStore.add({
       userId: user.id,
       userName: user.name,
       userEmail: user.email,
+      professionalId: selectedProfessional?.id,
+      professionalName: selectedProfessional?.name,
       date: format(date, "yyyy-MM-dd"),
       time,
       service,
@@ -70,7 +113,7 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer 56a663c109bc122ebadf069911db6b060da704699517ad59ddad7f624b06a414"
+        Authorization: "Bearer 56a663c109bc122ebadf069911db6b060da704699517ad59ddad7f624b06a414",
       },
       body: JSON.stringify({
         tipo: "agendamento",
@@ -80,8 +123,10 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
         date: format(date, "yyyy-MM-dd"),
         time,
         service,
-        notes
-      })
+        professionalId: selectedProfessional?.id,
+        professionalName: selectedProfessional?.name,
+        notes,
+      }),
     }).catch(() => {});
 
     toast.success("Agendamento solicitado. Aguarde confirmação.");
@@ -103,23 +148,27 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
                 <span className="block italic opacity-90">com a Dra. Camila</span>
               </h2>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/85">
-                Selecione o tratamento, o melhor dia e horário. Confirmaremos seu
-                agendamento por WhatsApp em até 1 dia útil.
+                Selecione o tratamento, o melhor dia e horário. Confirmaremos seu agendamento por
+                WhatsApp em até 1 dia útil.
               </p>
             </div>
 
             <ol className="mt-8 space-y-3 text-sm">
               {["Tratamento", "Data e horário", "Confirmação"].map((label, i) => (
                 <li key={label} className="flex items-center gap-3">
-                  <span className={cn(
-                    "flex h-7 w-7 items-center justify-center rounded-full border text-xs font-medium transition",
-                    i < step && "border-white bg-white text-foreground",
-                    i === step && "border-white bg-white/20",
-                    i > step && "border-white/40 text-white/70",
-                  )}>
+                  <span
+                    className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-full border text-xs font-medium transition",
+                      i < step && "border-white bg-white text-foreground",
+                      i === step && "border-white bg-white/20",
+                      i > step && "border-white/40 text-white/70",
+                    )}
+                  >
                     {i < step ? <Check className="h-3.5 w-3.5" strokeWidth={2} /> : i + 1}
                   </span>
-                  <span className={cn("tracking-wide", i === step ? "font-medium" : "text-white/80")}>
+                  <span
+                    className={cn("tracking-wide", i === step ? "font-medium" : "text-white/80")}
+                  >
                     {label}
                   </span>
                 </li>
@@ -127,7 +176,11 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
             </ol>
 
             <div className="text-[11px] uppercase tracking-[0.2em] text-white/70">
-              Atendimento · Seg a Sex · 09h–19h
+              Atendimento ·{" "}
+              {settings.businessDays
+                .map((day) => ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][day])
+                .join(" ")}{" "}
+              · {settings.startTime}–{settings.endTime}
             </div>
           </aside>
 
@@ -146,29 +199,49 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
             </div>
 
             {step === 0 && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {SERVICES.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setService(s)}
-                    className={cn(
-                      "group rounded-xl border p-4 text-left transition",
-                      service === s
-                        ? "border-gold bg-gold/5 shadow-soft"
-                        : "border-border hover:border-gold/50 hover:bg-secondary/40",
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-serif text-base">{s}</span>
-                      <span className={cn(
-                        "flex h-5 w-5 items-center justify-center rounded-full border",
-                        service === s ? "border-gold bg-gold text-white" : "border-border",
-                      )}>
-                        {service === s && <Check className="h-3 w-3" strokeWidth={2.5} />}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+              <div className="space-y-4">
+                {professionals.length > 0 && (
+                  <Field label="Profissional" full>
+                    <select
+                      value={professionalId}
+                      onChange={(e) => setProfessionalId(e.target.value)}
+                      className={inputCls}
+                    >
+                      {professionals.map((professional) => (
+                        <option key={professional.id} value={professional.id}>
+                          {professional.name} — {professional.specialties.join(", ")}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {SERVICES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setService(s)}
+                      className={cn(
+                        "group rounded-xl border p-4 text-left transition",
+                        service === s
+                          ? "border-gold bg-gold/5 shadow-soft"
+                          : "border-border hover:border-gold/50 hover:bg-secondary/40",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-serif text-base">{s}</span>
+                        <span
+                          className={cn(
+                            "flex h-5 w-5 items-center justify-center rounded-full border",
+                            service === s ? "border-gold bg-gold text-white" : "border-border",
+                          )}
+                        >
+                          {service === s && <Check className="h-3 w-3" strokeWidth={2.5} />}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -180,42 +253,61 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
                     selected={date}
                     onSelect={setDate}
                     locale={ptBR}
-                    disabled={(d) => d < todayMin || d.getDay() === 0 || d.getDay() === 6}
+                    disabled={(d) => d < todayMin || !isBusinessDay(d)}
                     initialFocus
                     className={cn("pointer-events-auto mx-auto p-3")}
                   />
                 </div>
 
                 <div>
-                  <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5 text-gold" strokeWidth={1.5} />
-                    Horários disponíveis
+                  <div className="mb-3 flex flex-col gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground sm:flex-row sm:items-center">
+                    <span className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-gold" strokeWidth={1.5} />
+                      Horários disponíveis
+                    </span>
                     {date && (
                       <span className="ml-auto text-foreground/80 normal-case tracking-normal">
                         {format(date, "EEEE, d 'de' MMMM", { locale: ptBR })}
                       </span>
                     )}
                   </div>
+                  <div className="mb-3 text-sm text-muted-foreground">
+                    Atendimento:{" "}
+                    {schedule.businessDays
+                      .map((day) => ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][day])
+                      .join(", ")}{" "}
+                    · {schedule.startTime}–{schedule.endTime} · intervalo de{" "}
+                    {schedule.intervalMinutes} min
+                    {selectedProfessional ? ` · profissional: ${selectedProfessional.name}` : ""}
+                  </div>
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {TIMES.map((t) => {
-                      const disabled = !date;
-                      const active = time === t && !!date;
-                      return (
-                        <button
-                          key={t}
-                          disabled={disabled}
-                          onClick={() => setTime(t)}
-                          className={cn(
-                            "rounded-lg border py-2.5 text-sm font-medium transition",
-                            disabled && "cursor-not-allowed opacity-40",
-                            !disabled && !active && "border-border hover:border-gold hover:bg-gold/5",
-                            active && "border-gold bg-gradient-luxury text-white shadow-soft",
-                          )}
-                        >
-                          {t}
-                        </button>
-                      );
-                    })}
+                    {availableTimes.length === 0 ? (
+                      <div className="sm:col-span-4 rounded-xl border border-border p-4 text-sm text-muted-foreground">
+                        Configure um horário válido no painel administrativo.
+                      </div>
+                    ) : (
+                      availableTimes.map((t) => {
+                        const disabled = !date;
+                        const active = time === t && !!date;
+                        return (
+                          <button
+                            key={t}
+                            disabled={disabled}
+                            onClick={() => setTime(t)}
+                            className={cn(
+                              "rounded-lg border py-2.5 text-sm font-medium transition",
+                              disabled && "cursor-not-allowed opacity-40",
+                              !disabled &&
+                                !active &&
+                                "border-border hover:border-gold hover:bg-gold/5",
+                              active && "border-gold bg-gradient-luxury text-white shadow-soft",
+                            )}
+                          >
+                            {t}
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
@@ -228,7 +320,9 @@ export function BookingDialog({ open, onClose, onRequireAuth, defaultService }: 
                     <Row label="Tratamento" value={service} />
                     <Row
                       label="Data"
-                      value={date ? format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR }) : "—"}
+                      value={
+                        date ? format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR }) : "—"
+                      }
                     />
                     <Row label="Horário" value={time || "—"} />
                   </div>

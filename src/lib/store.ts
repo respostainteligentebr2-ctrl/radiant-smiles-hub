@@ -3,6 +3,7 @@ import serviceWhitening from "@/assets/service-whitening.jpg";
 import serviceVeneers from "@/assets/service-veneers.jpg";
 import serviceAligners from "@/assets/service-aligners.jpg";
 import serviceImplants from "@/assets/service-implants.jpg";
+import clinicAbout from "@/assets/clinic-about.jpg";
 import logoSquare from "@/assets/logo-square.png";
 
 export type Role = "cliente" | "admin";
@@ -14,7 +15,7 @@ export interface User {
   name: string;
   phone?: string;
   role: Role;
-  manager?: string;
+  lgpdAccepted?: boolean;
 }
 
 export interface ServiceCard {
@@ -22,6 +23,15 @@ export interface ServiceCard {
   image: string;
   title: string;
   description: string;
+}
+
+export type DocumentType = "contrato" | "recibo" | "declaracao" | "outro";
+
+export interface DocumentTemplate {
+  id: string;
+  title: string;
+  type: DocumentType;
+  content: string;
 }
 
 export interface Appointment {
@@ -38,6 +48,8 @@ export interface Appointment {
   status: "agendado" | "confirmado" | "realizado" | "cancelado";
   googleEventId?: string;
   createdAt: string;
+  googleCalendarLink?: string;
+  googleSyncStatus?: "pending" | "synced" | "failed";
 }
 
 export interface Budget {
@@ -98,6 +110,7 @@ const KEYS = {
   charges: "dcr_charges",
   professionals: "dcr_professionals",
   testimonials: "dcr_testimonials",
+  documents: "dcr_documents",
   settings: "dcr_settings",
 } as const;
 
@@ -110,11 +123,13 @@ const REMOTE_KEYS = [
   KEYS.charges,
   KEYS.professionals,
   KEYS.testimonials,
+  KEYS.documents,
   KEYS.settings,
 ];
 
 export interface SiteSettings {
   heroImage: string;
+  aboutImage: string;
   businessDays: number[];
   startTime: string;
   endTime: string;
@@ -155,6 +170,7 @@ function getFullState() {
     [KEYS.charges]: read<Charge[]>(KEYS.charges, []),
     [KEYS.professionals]: read<Professional[]>(KEYS.professionals, []),
     [KEYS.testimonials]: read<Testimonial[]>(KEYS.testimonials, []),
+    [KEYS.documents]: read<DocumentTemplate[]>(KEYS.documents, DEFAULT_DOCUMENT_TEMPLATES),
     [KEYS.settings]: { ...DEFAULT_SETTINGS, ...read<Partial<SiteSettings>>(KEYS.settings, {}) },
   };
 }
@@ -259,10 +275,36 @@ const DEFAULT_TESTIMONIALS: Testimonial[] = [
   },
 ];
 
+const DEFAULT_DOCUMENT_TEMPLATES: DocumentTemplate[] = [
+  {
+    id: "d1",
+    title: "Contrato de prestação de serviços",
+    type: "contrato",
+    content:
+      "Contrato de prestação de serviços entre {{clientName}} ({{clientEmail}}) e Dra. Camila Resende. Serviço: {{serviceTitle}}. Valor: {{total}}. Prazo: {{term}}. Observações: {{customNote}}.",
+  },
+  {
+    id: "d2",
+    title: "Recibo de pagamento",
+    type: "recibo",
+    content:
+      "Recebemos de {{clientName}} o valor de {{total}} referente ao serviço {{serviceTitle}}. Data: {{date}}.",
+  },
+  {
+    id: "d3",
+    title: "Declaração de atendimento",
+    type: "declaracao",
+    content:
+      "Declaro para os devidos fins que {{clientName}} recebeu atendimento odontológico referente a {{serviceTitle}} em {{date}}.",
+  },
+];
+
 export const DEFAULT_HERO_IMAGE = logoSquare;
+export const DEFAULT_ABOUT_IMAGE = clinicAbout;
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   heroImage: DEFAULT_HERO_IMAGE,
+  aboutImage: DEFAULT_ABOUT_IMAGE,
   businessDays: [1, 2, 3, 4, 5],
   startTime: "09:00",
   endTime: "18:00",
@@ -278,31 +320,22 @@ export async function ensureSeed() {
 
   const users = read<User[]>(KEYS.users, []);
   if (!users.find((u) => u.email === ADMIN.email)) {
-    write(KEYS.users, [...users, ADMIN]);
+    write(KEYS.users, [...users, { ...ADMIN, lgpdAccepted: true }]);
   }
   if (!localStorage.getItem(KEYS.services)) write(KEYS.services, DEFAULT_SERVICES);
   if (!localStorage.getItem(KEYS.testimonials)) write(KEYS.testimonials, DEFAULT_TESTIMONIALS);
+  if (!localStorage.getItem(KEYS.documents)) write(KEYS.documents, DEFAULT_DOCUMENT_TEMPLATES);
   if (!localStorage.getItem(KEYS.appointments)) write(KEYS.appointments, []);
   if (!localStorage.getItem(KEYS.budgets)) write(KEYS.budgets, []);
   if (!localStorage.getItem(KEYS.charges)) write(KEYS.charges, []);
   if (!localStorage.getItem(KEYS.professionals)) write(KEYS.professionals, []);
-  if (!localStorage.getItem(KEYS.settings))
-    write(KEYS.settings, {
-      heroImage: DEFAULT_HERO_IMAGE,
-      businessDays: [1, 2, 3, 4, 5],
-      startTime: "09:00",
-      endTime: "18:00",
-      intervalMinutes: 60,
-    });
+  if (!localStorage.getItem(KEYS.settings)) write(KEYS.settings, DEFAULT_SETTINGS);
 
   await syncStateToServer();
 }
 
 export const settings = {
-  get: (): SiteSettings => ({
-    ...DEFAULT_SETTINGS,
-    ...read<Partial<SiteSettings>>(KEYS.settings, {}),
-  }),
+  get: (): SiteSettings => ({ ...DEFAULT_SETTINGS, ...read<Partial<SiteSettings>>(KEYS.settings, {}) }),
   save: (s: SiteSettings) => write(KEYS.settings, s),
 };
 
@@ -369,6 +402,11 @@ export const services = {
 export const testimonials = {
   list: () => read<Testimonial[]>(KEYS.testimonials, []),
   save: (list: Testimonial[]) => write(KEYS.testimonials, list),
+};
+
+export const documents = {
+  list: () => read<DocumentTemplate[]>(KEYS.documents, DEFAULT_DOCUMENT_TEMPLATES),
+  save: (list: DocumentTemplate[]) => write(KEYS.documents, list),
 };
 
 export const appointments = {

@@ -86,7 +86,7 @@ export async function createGoogleCalendarEvent(payload: GoogleCalendarEventPayl
         { method: "popup", minutes: 30 },
       ],
     },
-  } as const;
+  };
 
   const result = await calendar.events.insert({
     calendarId: getServiceAccountCredentials().calendarId,

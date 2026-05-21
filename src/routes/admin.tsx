@@ -16,6 +16,7 @@ import {
   DollarSign,
   MessageCircle,
   Mail,
+  LayoutDashboard,
 } from "lucide-react";
 import { useSession } from "@/lib/use-session";
 import {
@@ -30,6 +31,7 @@ import {
   fileToBase64,
   getUsers,
   saveUsers,
+  updateUser,
   logout,
   uid,
   type Appointment,
@@ -42,6 +44,7 @@ import {
   type User,
 } from "@/lib/store";
 import { Toaster } from "@/components/ui/sonner";
+import { AdminCRM } from "@/components/AdminCRM";
 import { toast } from "sonner";
 import { PanelHeader, Field, inputCls, SectionTitle, Empty, StatusBadge } from "./cliente";
 
@@ -138,156 +141,6 @@ function NavBtn({
     >
       {icon} {children}
     </button>
-  );
-}
-
-function AdminCRM() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [filter, setFilter] = useState<"all" | Appointment["status"]>("all");
-
-  useEffect(() => {
-    const refresh = () => {
-      setAppointments(aStore.list());
-      setBudgets(bStore.list());
-    };
-    refresh();
-    window.addEventListener("dcr-store-change", refresh);
-    return () => window.removeEventListener("dcr-store-change", refresh);
-  }, []);
-
-  const summary = {
-    agendado: appointments.filter((a) => a.status === "agendado").length,
-    confirmado: appointments.filter((a) => a.status === "confirmado").length,
-    realizado: appointments.filter((a) => a.status === "realizado").length,
-    cancelado: appointments.filter((a) => a.status === "cancelado").length,
-    totalAppointments: appointments.length,
-    pendingBudgets: budgets.filter((b) => b.status === "pendente").length,
-    respondedBudgets: budgets.filter((b) => b.status === "respondido").length,
-  };
-
-  const filteredAppointments = appointments.filter((a) => (filter === "all" ? true : a.status === filter));
-
-  const setAppointmentStatus = (id: string, status: Appointment["status"]) => {
-    aStore.save(aStore.list().map((a) => (a.id === id ? { ...a, status } : a)));
-    toast.success("Status do agendamento atualizado.");
-  };
-
-  const setBudgetStatus = (id: string, status: Budget["status"]) => {
-    bStore.save(bStore.list().map((b) => (b.id === id ? { ...b, status } : b)));
-    toast.success("Status do orçamento atualizado.");
-  };
-
-  return (
-    <div>
-      <SectionTitle
-        title="CRM de consultas"
-        action={
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">Agendamentos</div>
-              <div className="mt-2 text-3xl font-serif">{summary.totalAppointments}</div>
-            </div>
-            <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">Orçamentos pendentes</div>
-              <div className="mt-2 text-3xl font-serif">{summary.pendingBudgets}</div>
-            </div>
-            <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">Orçamentos respondidos</div>
-              <div className="mt-2 text-3xl font-serif">{summary.respondedBudgets}</div>
-            </div>
-          </div>
-        }
-      />
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="font-serif text-xl">Agendamentos</h3>
-              <p className="text-sm text-muted-foreground">Controle de consultas agendadas, confirmadas, realizadas e canceladas.</p>
-            </div>
-            <div className="flex flex-wrap gap-2 rounded-full border border-border p-1 text-xs">
-              {(["all", "agendado", "confirmado", "realizado", "cancelado"] as const).map((value) => (
-                <button
-                  key={value}
-                  onClick={() => setFilter(value)}
-                  className={`rounded-full px-3 py-1.5 ${filter === value ? "bg-gradient-luxury text-white" : "text-muted-foreground"}`}
-                >
-                  {value === "all" ? "Todos" : value}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {filteredAppointments.length === 0 ? (
-            <Empty text="Nenhum agendamento nessa categoria." />
-          ) : (
-            <div className="mt-5 space-y-3">
-              {filteredAppointments.map((a) => (
-                <div key={a.id} className="rounded-2xl border border-border p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="font-serif text-lg">{a.userName}</div>
-                      <div className="text-xs text-muted-foreground">{a.userEmail}</div>
-                      <div className="mt-2 text-sm">
-                        <span className="font-medium">{a.service}</span> · {new Date(a.date).toLocaleDateString("pt-BR")} · {a.time}
-                      </div>
-                      {a.notes && <div className="mt-1 text-xs text-muted-foreground">{a.notes}</div>}
-                    </div>
-                    <StatusBadge status={a.status} />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <select
-                      value={a.status}
-                      onChange={(e) => setAppointmentStatus(a.id, e.target.value as Appointment["status"])}
-                      className="rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
-                    >
-                      <option value="agendado">agendado</option>
-                      <option value="confirmado">confirmado</option>
-                      <option value="realizado">realizado</option>
-                      <option value="cancelado">cancelado</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h3 className="font-serif text-xl">Orçamentos</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Leads de orçamento com acompanhamento rápido.</p>
-          {budgets.length === 0 ? (
-            <Empty text="Nenhum orçamento registrado." />
-          ) : (
-            <div className="mt-5 space-y-3">
-              {budgets.map((b) => (
-                <div key={b.id} className="rounded-2xl border border-border p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="font-serif text-lg">{b.userName}</div>
-                      <div className="text-xs text-muted-foreground">{b.userEmail} · {new Date(b.createdAt).toLocaleDateString("pt-BR")}</div>
-                    </div>
-                    <StatusBadge status={b.status} />
-                  </div>
-                  <p className="mt-3 text-sm text-muted-foreground">{b.description}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setBudgetStatus(b.id, b.status === "pendente" ? "respondido" : "pendente")}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-foreground hover:bg-secondary"
-                    >
-                      {b.status === "pendente" ? "Marcar como respondido" : "Reabrir orçamento"}
-                    </button>
-                    {b.reply && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">Resposta registrada</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -1376,28 +1229,60 @@ function AdminSchedule() {
 
 function AdminClients() {
   const [list, setList] = useState<User[]>([]);
+  const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [manager, setManager] = useState("");
 
+  const refresh = () => setList(getUsers().filter((u) => u.role === "cliente"));
+
   useEffect(() => {
-    const refresh = () => setList(getUsers().filter((u) => u.role === "cliente"));
     refresh();
     window.addEventListener("dcr-store-change", refresh);
     return () => window.removeEventListener("dcr-store-change", refresh);
   }, []);
 
-  const createClient = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setEditingId(null);
+    setName("");
+    setEmail("");
+    setPhone("");
+    setPassword("");
+    setManager("");
+  };
+
+  const createOrUpdateClient = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      return toast.error("Preencha nome, e-mail e senha.");
+    if (!name.trim() || !email.trim()) {
+      return toast.error("Preencha nome e e-mail.");
     }
+
     const users = getUsers();
-    if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
+    const emailTaken = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.id !== editingId);
+    if (emailTaken) {
       return toast.error("E-mail já cadastrado.");
     }
+
+    if (editingId) {
+      updateUser(editingId, {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        password: password.trim() || users.find((u) => u.id === editingId)?.password || "",
+        manager: manager.trim() || undefined,
+      });
+      toast.success("Cliente atualizado com sucesso.");
+      resetForm();
+      return;
+    }
+
+    if (!password.trim()) {
+      return toast.error("Preencha senha para criar um cliente.");
+    }
+
     saveUsers([
       ...users,
       {
@@ -1410,12 +1295,17 @@ function AdminClients() {
         manager: manager.trim() || undefined,
       },
     ]);
-    setName("");
-    setEmail("");
-    setPhone("");
-    setPassword("");
-    setManager("");
     toast.success("Cliente criado com sucesso.");
+    resetForm();
+  };
+
+  const editClient = (client: User) => {
+    setEditingId(client.id);
+    setName(client.name);
+    setEmail(client.email);
+    setPhone(client.phone ?? "");
+    setPassword("");
+    setManager(client.manager ?? "");
   };
 
   const removeClient = (id: string) => {
@@ -1423,13 +1313,20 @@ function AdminClients() {
     toast.success("Cliente removido.");
   };
 
+  const filteredList = list.filter((client) =>
+    [client.name, client.email, client.phone ?? "", client.manager ?? ""]
+      .join(" ")
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+
   return (
     <div>
       <SectionTitle title="Pacientes" />
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
         <div className="rounded-3xl border border-border p-6">
           <div className="text-sm font-medium text-muted-foreground">Adicionar novo cliente</div>
-          <form onSubmit={createClient} className="mt-6 space-y-4">
+          <form onSubmit={createOrUpdateClient} className="mt-6 space-y-4">
             <Field label="Nome">
               <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
             </Field>
@@ -1445,13 +1342,34 @@ function AdminClients() {
             <Field label="Gestor responsável" full>
               <input value={manager} onChange={(e) => setManager(e.target.value)} className={inputCls} placeholder="Nome do gestor ou responsável" />
             </Field>
-            <button className="btn-gold w-full rounded-full px-6 py-3 text-sm font-medium">Criar cliente</button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button className="btn-gold w-full rounded-full px-6 py-3 text-sm font-medium">
+                {editingId ? "Salvar alterações" : "Criar cliente"}
+              </button>
+              {editingId && (
+                <button type="button" onClick={resetForm} className="inline-flex items-center justify-center rounded-full border border-border bg-background px-6 py-3 text-sm font-medium text-muted-foreground hover:bg-secondary">
+                  Cancelar edição
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
         <div className="rounded-3xl border border-border p-6">
-          <div className="text-sm font-medium text-muted-foreground">Clientes cadastrados</div>
-          {list.length === 0 ? (
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">Clientes cadastrados</div>
+              <div className="text-xs text-muted-foreground">Total: {list.length} · Com telefone: {list.filter((client) => client.phone).length} · Com gestor: {list.filter((client) => client.manager).length}</div>
+            </div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar clientes..."
+              className="w-full rounded-full border border-input bg-background px-4 py-2 text-sm sm:w-64"
+            />
+          </div>
+          {filteredList.length === 0 ? (
             <Empty text="Nenhum cliente cadastrado." />
           ) : (
             <div className="mt-4 space-y-3">
@@ -1468,9 +1386,14 @@ function AdminClients() {
                         <div className="mt-1 text-xs text-muted-foreground">Gestor: {client.manager}</div>
                       )}
                     </div>
-                    <button onClick={() => removeClient(client.id)} className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} /> Remover
-                    </button>
+                    <div className="flex gap-2">
+                      <button onClick={() => editClient(client)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground hover:bg-secondary">
+                        <Plus className="h-3.5 w-3.5 rotate-45" strokeWidth={1.5} /> Editar
+                      </button>
+                      <button onClick={() => removeClient(client.id)} className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} /> Remover
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

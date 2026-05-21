@@ -15,11 +15,13 @@ export function AuthModal({
   adminOnly?: boolean;
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [showLgpdText, setShowLgpdText] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", lgpdAccepted: false });
 
   useEffect(() => {
     if (open) {
-      setForm({ name: "", email: "", phone: "", password: "" });
+      setForm({ name: "", email: "", phone: "", password: "", lgpdAccepted: false });
+      setShowLgpdText(false);
       if (adminOnly) setMode("login");
     }
   }, [open, adminOnly]);
@@ -38,11 +40,15 @@ export function AuthModal({
       if (form.name.length < 2 || form.password.length < 4) {
         return toast.error("Preencha nome e senha (mín. 4 caracteres).");
       }
+      if (!form.lgpdAccepted) {
+        return toast.error("Aceite a LGPD para continuar.");
+      }
       const res = register({
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         password: form.password,
+        lgpdAccepted: form.lgpdAccepted,
       });
       if ("error" in res) return toast.error(res.error);
       toast.success("Cadastro realizado.");
@@ -104,6 +110,41 @@ export function AuthModal({
             onChange={(v) => setForm({ ...form, password: v })}
             required
           />
+
+          {mode === "register" && (
+            <div className="rounded-3xl border border-border bg-background p-4 text-sm">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.lgpdAccepted}
+                  onChange={(e) => setForm({ ...form, lgpdAccepted: e.target.checked })}
+                  className="mt-1 h-4 w-4 rounded border-input text-gold focus:ring-gold"
+                />
+                <div>
+                  <div className="font-medium">Li e concordo com a Política de Privacidade e tratamento de dados pessoais conforme a LGPD.</div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLgpdText((current) => !current)}
+                    className="mt-2 text-xs font-medium text-gold hover:underline"
+                  >
+                    {showLgpdText ? 'Ocultar texto da LGPD' : 'Ler o texto completo da LGPD'}
+                  </button>
+                </div>
+              </label>
+              {showLgpdText && (
+                <div className="mt-4 rounded-2xl border border-border bg-card p-4 text-xs leading-relaxed text-muted-foreground">
+                  <p className="mb-2 font-semibold">Proteção de dados pessoais (LGPD)</p>
+                  <p>
+                    Seus dados são coletados apenas para atender ao agendamento e à comunicação necessária para prestação de serviços.
+                    O tratamento será realizado com base nas finalidades contratadas, observando a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018).
+                  </p>
+                  <p className="mt-2">
+                    Você pode solicitar acesso, correção, exclusão ou outras informações sobre o uso dos seus dados pessoais quando desejar.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <button type="submit" className="btn-gold mt-4 w-full rounded-full py-3 font-medium">
             {mode === "login" ? "Entrar" : "Criar conta"}

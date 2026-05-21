@@ -11,6 +11,22 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
+const CLINIC_LOCATION = "Av. Visconde de Ibituruna, 336 — Sala 107, Barreiro de Baixo, Belo Horizonte, MG";
+
+function getGoogleMapsRouteUrl(destination: string) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}
+
+function getGoogleCalendarLink(appointment: Appointment) {
+  const startDateTime = appointment.date.replace(/-/g, "") + "T" + appointment.time.replace(/:/g, "") + "00";
+  const end = new Date(`${appointment.date}T${appointment.time}:00`);
+  end.setHours(end.getHours() + 1);
+  const endDateTime = `${String(end.getFullYear())}${String(end.getMonth() + 1).padStart(2, "0")}${String(end.getDate()).padStart(2, "0")}T${String(end.getHours()).padStart(2, "0")}${String(end.getMinutes()).padStart(2, "0")}00`;
+
+  const details = `Consulta de ${appointment.service} com a Dra. Camila Resende.\n\nObservações: ${appointment.notes ?? "Nenhuma"}`;
+  return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(appointment.service)}&dates=${startDateTime}/${endDateTime}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(CLINIC_LOCATION)}&ctz=America/Sao_Paulo`;
+}
+
 export const Route = createFileRoute("/cliente")({
   component: ClientePanel,
 });
@@ -124,15 +140,35 @@ function MyAppointments({ userId, onNew }: { userId: string; onNew: () => void }
       ) : (
         <div className="mt-6 space-y-3">
           {list.map((a) => (
-            <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4">
-              <div>
-                <div className="font-serif text-lg">{a.service}</div>
-                <div className="text-sm text-muted-foreground">
-                  {new Date(a.date).toLocaleDateString("pt-BR")} · {a.time}
+            <div key={a.id} className="rounded-xl border border-border p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="font-serif text-lg">{a.service}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(a.date).toLocaleDateString("pt-BR")} · {a.time}
+                  </div>
+                  {a.notes && <div className="mt-1 text-xs text-muted-foreground">{a.notes}</div>}
                 </div>
-                {a.notes && <div className="mt-1 text-xs text-muted-foreground">{a.notes}</div>}
+                <StatusBadge status={a.status} />
               </div>
-              <StatusBadge status={a.status} />
+              <div className="mt-4 flex flex-wrap gap-2">
+                <a
+                  href={getGoogleCalendarLink(a)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-gold px-4 py-2 text-xs font-medium text-gold transition hover:bg-gold/10"
+                >
+                  Adicionar ao Google Agenda
+                </a>
+                <a
+                  href={getGoogleMapsRouteUrl(CLINIC_LOCATION)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground transition hover:border-gold hover:text-gold"
+                >
+                  Ver rota até a clínica
+                </a>
+              </div>
             </div>
           ))}
         </div>
@@ -340,6 +376,8 @@ export function StatusBadge({ status }: { status: string }) {
     cancelado: "bg-red-100 text-red-700",
     pendente: "bg-amber-100 text-amber-700",
     respondido: "bg-emerald-100 text-emerald-700",
+    enviado: "bg-sky-100 text-sky-700",
+    pago: "bg-emerald-100 text-emerald-700",
   };
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${map[status] ?? "bg-secondary"}`}>

@@ -333,6 +333,16 @@ export function Contact() {
               loading="lazy"
             />
           </div>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ADDRESS + ", Belo Horizonte, MG")}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-gold rounded-full px-5 py-3 text-sm font-medium"
+            >
+              Abrir rota no Google Maps
+            </a>
+          </div>
         </div>
 
         <form onSubmit={submit} className="rounded-3xl border border-border bg-card p-8 shadow-soft">

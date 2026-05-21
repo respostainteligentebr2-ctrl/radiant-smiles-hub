@@ -31,6 +31,9 @@ export function AuthModal({
     if (mode === "login") {
       const u = login(form.email.trim(), form.password);
       if (!u) return toast.error("E-mail ou senha inválidos.");
+      if (adminOnly && u.role !== "admin") {
+        return toast.error("Acesso negado. Use credenciais de gestão.");
+      }
       toast.success(`Bem-vinda, ${u.name.split(" ")[0]}`);
       onSuccess?.();
       onClose();

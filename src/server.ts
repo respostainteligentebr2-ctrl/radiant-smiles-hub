@@ -1,8 +1,10 @@
+import "dotenv/config";
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadState, saveState } from "./lib/db";
+import { createGoogleCalendarEvent } from "./lib/google-calendar";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -101,12 +103,42 @@ async function handleApiState(request: Request): Promise<Response> {
   });
 }
 
+async function handleGoogleEvent(request: Request): Promise<Response> {
+  try {
+    const payload = await request.json();
+    const event = await createGoogleCalendarEvent({
+      summary: payload.summary,
+      description: payload.description,
+      startDate: payload.startDate,
+      startTime: payload.startTime,
+      durationMinutes: payload.durationMinutes,
+      attendeeEmail: payload.attendeeEmail,
+      attendeeName: payload.attendeeName,
+      notes: payload.notes,
+    });
+    return new Response(JSON.stringify(event), {
+      status: 200,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  } catch (error) {
+    console.error("Google Calendar error:", error);
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
-      if (url.pathname === "/api/state") {
+        if (url.pathname === "/api/state") {
         return await handleApiState(request);
+      }
+
+      if (url.pathname === "/api/google/event" && request.method === "POST") {
+        return await handleGoogleEvent(request);
       }
 
       const handler = await getServerEntry();

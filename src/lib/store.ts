@@ -3,6 +3,7 @@ import serviceWhitening from "@/assets/service-whitening.jpg";
 import serviceVeneers from "@/assets/service-veneers.jpg";
 import serviceAligners from "@/assets/service-aligners.jpg";
 import serviceImplants from "@/assets/service-implants.jpg";
+import clinicAbout from "@/assets/clinic-about.jpg";
 import logoSquare from "@/assets/logo-square.png";
 
 export type Role = "cliente" | "admin";
@@ -14,6 +15,7 @@ export interface User {
   name: string;
   phone?: string;
   role: Role;
+  lgpdAccepted: boolean;
 }
 
 export interface ServiceCard {
@@ -21,6 +23,15 @@ export interface ServiceCard {
   image: string;
   title: string;
   description: string;
+}
+
+export type DocumentType = "contrato" | "recibo" | "declaracao" | "outro";
+
+export interface DocumentTemplate {
+  id: string;
+  title: string;
+  type: DocumentType;
+  content: string;
 }
 
 export interface Appointment {
@@ -34,6 +45,9 @@ export interface Appointment {
   notes?: string;
   status: "agendado" | "confirmado" | "realizado" | "cancelado";
   createdAt: string;
+  googleEventId?: string;
+  googleCalendarLink?: string;
+  googleSyncStatus?: "pending" | "synced" | "failed";
 }
 
 export interface Budget {
@@ -62,6 +76,7 @@ const KEYS = {
   appointments: "dcr_appointments",
   budgets: "dcr_budgets",
   testimonials: "dcr_testimonials",
+  documents: "dcr_documents",
   settings: "dcr_settings",
 } as const;
 
@@ -72,11 +87,13 @@ const REMOTE_KEYS = [
   KEYS.appointments,
   KEYS.budgets,
   KEYS.testimonials,
+  KEYS.documents,
   KEYS.settings,
 ];
 
 export interface SiteSettings {
   heroImage: string;
+  aboutImage: string;
 }
 
 const isBrowser = typeof window !== "undefined";
@@ -111,7 +128,8 @@ function getFullState() {
     [KEYS.appointments]: read<Appointment[]>(KEYS.appointments, []),
     [KEYS.budgets]: read<Budget[]>(KEYS.budgets, []),
     [KEYS.testimonials]: read<Testimonial[]>(KEYS.testimonials, []),
-    [KEYS.settings]: read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE }),
+    [KEYS.documents]: read<DocumentTemplate[]>(KEYS.documents, DEFAULT_DOCUMENT_TEMPLATES),
+    [KEYS.settings]: read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE, aboutImage: DEFAULT_ABOUT_IMAGE }),
   };
 }
 
@@ -161,6 +179,7 @@ const ADMIN: User = {
   password: "Admin123",
   name: "Dra. Camila Resende",
   role: "admin",
+  lgpdAccepted: true,
 };
 
 const DEFAULT_SERVICES: ServiceCard[] = [
@@ -194,6 +213,46 @@ const DEFAULT_SERVICES: ServiceCard[] = [
   },
 ];
 
+const DEFAULT_DOCUMENT_TEMPLATES: DocumentTemplate[] = [
+  {
+    id: "d1",
+    title: "Contrato de Prestação de Serviços - Aparelho Fixo de Alinhamento",
+    type: "contrato",
+    content:
+      "CONTRATO DE PRESTAÇÃO DE SERVIÇOS\n\n" +
+      "Entre {{clientName}}, CPF/CNPJ ______________________, residente em ______________________, e Clínica Dra. Camila Resende, fica ajustado o seguinte:\n\n" +
+      "1. Objeto: prestação de serviços odontológicos para {{serviceTitle}}.\n" +
+      "2. Prazo previsto: {{term}}.\n" +
+      "3. Detalhes do serviço: {{serviceDescription}}.\n" +
+      "4. Valor e condições: {{total}}.\n\n" +
+      "O cliente declara ter recebido as informações necessárias sobre o tratamento, riscos e cuidados pós-procedimento.\n\n" +
+      "Local e data: {{date}}.\n\n" +
+      "Assinatura do cliente: ____________________________\n" +
+      "Assinatura do prestador: ____________________________\n",
+  },
+  {
+    id: "d2",
+    title: "Recibo de Pagamento",
+    type: "recibo",
+    content:
+      "RECIBO\n\n" +
+      "Recebemos de {{clientName}}, CPF/CNPJ ______________________, o valor de {{total}} referente ao serviço {{serviceTitle}} realizado em {{date}}.\n\n" +
+      "Observações: {{customNote}}\n\n" +
+      "Assinatura: ____________________________\n",
+  },
+  {
+    id: "d3",
+    title: "Declaração de Atendimento Odontológico",
+    type: "declaracao",
+    content:
+      "DECLARAÇÃO\n\n" +
+      "Declaramos que {{clientName}}, CPF/CNPJ ______________________, realizou atendimento odontológico referente a {{serviceTitle}} na Clínica Dra. Camila Resende em {{date}}.\n\n" +
+      "Descrição dos serviços: {{serviceDescription}}\n\n" +
+      "Local e data: {{date}}.\n\n" +
+      "Assinatura: ____________________________\n",
+  },
+];
+
 const DEFAULT_TESTIMONIALS: Testimonial[] = [
   {
     id: "t1",
@@ -216,6 +275,7 @@ const DEFAULT_TESTIMONIALS: Testimonial[] = [
 ];
 
 export const DEFAULT_HERO_IMAGE = logoSquare;
+export const DEFAULT_ABOUT_IMAGE = clinicAbout;
 
 export async function ensureSeed() {
   if (!isBrowser) return;
@@ -226,20 +286,26 @@ export async function ensureSeed() {
 
   const users = read<User[]>(KEYS.users, []);
   if (!users.find((u) => u.email === ADMIN.email)) {
-    write(KEYS.users, [...users, ADMIN]);
+    write(KEYS.users, [...users, { ...ADMIN, lgpdAccepted: true }]);
   }
   if (!localStorage.getItem(KEYS.services)) write(KEYS.services, DEFAULT_SERVICES);
   if (!localStorage.getItem(KEYS.testimonials)) write(KEYS.testimonials, DEFAULT_TESTIMONIALS);
+  if (!localStorage.getItem(KEYS.documents)) write(KEYS.documents, DEFAULT_DOCUMENT_TEMPLATES);
   if (!localStorage.getItem(KEYS.appointments)) write(KEYS.appointments, []);
   if (!localStorage.getItem(KEYS.budgets)) write(KEYS.budgets, []);
-  if (!localStorage.getItem(KEYS.settings)) write(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE });
+  if (!localStorage.getItem(KEYS.settings)) write(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE, aboutImage: DEFAULT_ABOUT_IMAGE });
 
   await syncStateToServer();
 }
 
 export const settings = {
-  get: (): SiteSettings => read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE }),
+  get: (): SiteSettings => read<SiteSettings>(KEYS.settings, { heroImage: DEFAULT_HERO_IMAGE, aboutImage: DEFAULT_ABOUT_IMAGE }),
   save: (s: SiteSettings) => write(KEYS.settings, s),
+};
+
+export const documents = {
+  list: () => read<DocumentTemplate[]>(KEYS.documents, DEFAULT_DOCUMENT_TEMPLATES),
+  save: (list: DocumentTemplate[]) => write(KEYS.documents, list),
 };
 
 /* ---------- Auth ---------- */
@@ -266,6 +332,9 @@ export function register(data: Omit<User, "id" | "role">): User | { error: strin
   const users = getUsers();
   if (users.find((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
     return { error: "E-mail já cadastrado." };
+  }
+  if (!data.lgpdAccepted) {
+    return { error: "É necessário aceitar a política de privacidade e LGPD." };
   }
   const u: User = { ...data, id: uid(), role: "cliente" };
   saveUsers([...users, u]);
@@ -301,6 +370,7 @@ export const appointments = {
       id: uid(),
       status: "agendado",
       createdAt: new Date().toISOString(),
+      googleSyncStatus: "pending",
     };
     write(KEYS.appointments, [full, ...appointments.list()]);
     return full;

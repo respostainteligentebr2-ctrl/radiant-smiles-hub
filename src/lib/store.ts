@@ -15,6 +15,7 @@ export interface User {
   name: string;
   phone?: string;
   role: Role;
+  manager?: string;
   lgpdAccepted?: boolean;
 }
 

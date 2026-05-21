@@ -361,10 +361,10 @@ function AdminDocuments() {
       {
         id,
         title: "Novo modelo de documento",
-        type: "outro",
-        content: "{{clientName}}
+        type: "outro" as DocumentType,
+        content: `{{clientName}}
 
-Descreva o documento aqui...",
+Descreva o documento aqui...`,
       },
     ];
     docsStore.save(next);

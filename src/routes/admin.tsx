@@ -27,7 +27,7 @@ import {
   professionals as professionalsStore,
   settings as settingsStore,
   documents as docsStore,
-  DEFAULT_HERO_IMAGE,
+  DEFAULT_HERO_IMAGE, DEFAULT_ABOUT_IMAGE,
   fileToBase64,
   getUsers,
   saveUsers,
@@ -1406,27 +1406,35 @@ function AdminClients() {
 }
 
 function AdminAppearance() {
-  const [heroImage, setHeroImage] = useState<string>(DEFAULT_HERO_IMAGE);
-  const [pendingHeroImage, setPendingHeroImage] = useState<string>(DEFAULT_HERO_IMAGE);
+  const current = settingsStore.get();
+  const [heroImage, setHeroImage] = useState<string>(current.heroImage || DEFAULT_HERO_IMAGE);
+  const [aboutImage, setAboutImage] = useState<string>(current.aboutImage || DEFAULT_ABOUT_IMAGE);
+  const [pendingHeroImage, setPendingHeroImage] = useState<string>(current.heroImage || DEFAULT_HERO_IMAGE);
+  const [pendingAboutImage, setPendingAboutImage] = useState<string>(current.aboutImage || DEFAULT_ABOUT_IMAGE);
 
   useEffect(() => {
     const refresh = () => {
-      const current = settingsStore.get().heroImage || DEFAULT_HERO_IMAGE;
-      setHeroImage(current);
-      setPendingHeroImage(current);
+      const s = settingsStore.get();
+      setHeroImage(s.heroImage || DEFAULT_HERO_IMAGE);
+      setAboutImage(s.aboutImage || DEFAULT_ABOUT_IMAGE);
+      setPendingHeroImage(s.heroImage || DEFAULT_HERO_IMAGE);
+      setPendingAboutImage(s.aboutImage || DEFAULT_ABOUT_IMAGE);
     };
     refresh();
     window.addEventListener("dcr-store-change", refresh);
     return () => window.removeEventListener("dcr-store-change", refresh);
   }, []);
 
+  const hasChanges = pendingHeroImage !== heroImage || pendingAboutImage !== aboutImage;
+
   const saveChanges = () => {
-    settingsStore.save({ ...settingsStore.get(), heroImage: pendingHeroImage });
+    settingsStore.save({ ...settingsStore.get(), heroImage: pendingHeroImage, aboutImage: pendingAboutImage });
     setHeroImage(pendingHeroImage);
-    toast.success("Imagem do Hero salva.");
+    setAboutImage(pendingAboutImage);
+    toast.success("Aparência atualizada.");
   };
 
-  const onFile = async (file?: File) => {
+  const onHeroFile = async (file?: File) => {
     if (!file) return;
     if (file.size > 2_500_000) return toast.error("Imagem deve ter até 2.5MB.");
     const b64 = await fileToBase64(file);
@@ -1434,66 +1442,83 @@ function AdminAppearance() {
     toast.success("Arquivo carregado. Clique em salvar para confirmar.");
   };
 
-  const onUrl = (url: string) => {
-    setPendingHeroImage(url);
+  const onAboutFile = async (file?: File) => {
+    if (!file) return;
+    if (file.size > 2_500_000) return toast.error("Imagem deve ter até 2.5MB.");
+    const b64 = await fileToBase64(file);
+    setPendingAboutImage(b64);
+    toast.success("Arquivo carregado. Clique em salvar para confirmar.");
   };
 
-  const reset = () => {
-    setPendingHeroImage(DEFAULT_HERO_IMAGE);
-  };
-
-  const hasChanges = pendingHeroImage !== heroImage;
+  const onHeroUrl = (url: string) => setPendingHeroImage(url);
+  const onAboutUrl = (url: string) => setPendingAboutImage(url);
+  const resetHero = () => setPendingHeroImage(DEFAULT_HERO_IMAGE);
+  const resetAbout = () => setPendingAboutImage(DEFAULT_ABOUT_IMAGE);
 
   return (
     <div>
       <SectionTitle title="Aparência da página inicial" />
       <p className="mt-2 text-sm text-muted-foreground">
-        Personalize a imagem em destaque exibida no Hero da página inicial.
+        Personalize a imagem em destaque do Hero e a imagem da seção Sobre.
       </p>
 
+      {/* Hero */}
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pré-visualização</div>
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Imagem Hero</div>
           <div className="mt-3 flex aspect-square w-full max-w-sm items-center justify-center overflow-hidden rounded-3xl border border-gold/30 bg-card p-6 shadow-soft">
             <img src={pendingHeroImage} alt="Hero" className="h-full w-full object-contain" />
           </div>
         </div>
-
         <div className="space-y-4">
-          <Field label="URL da imagem">
-            <input
-              value={pendingHeroImage.startsWith("data:") ? "(arquivo enviado)" : pendingHeroImage}
-              onChange={(e) => onUrl(e.target.value)}
-              className={inputCls}
-              placeholder="https://..."
-            />
+          <Field label="URL da imagem Hero">
+            <input value={pendingHeroImage.startsWith("data:") ? "(arquivo enviado)" : pendingHeroImage} onChange={(e) => onHeroUrl(e.target.value)} className={inputCls} placeholder="https://..." />
           </Field>
           <div>
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gold/50 px-4 py-2 text-sm text-foreground hover:bg-gold/10">
-              <ImageIcon className="h-4 w-4" strokeWidth={1.5} /> Enviar arquivo
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+              <ImageIcon className="h-4 w-4" strokeWidth={1.5} /> Enviar arquivo Hero
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => onHeroFile(e.target.files?.[0])} />
             </label>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button
-              onClick={saveChanges}
-              disabled={!hasChanges}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${hasChanges ? "btn-gold text-black" : "border border-border bg-muted/20 text-muted-foreground cursor-not-allowed"}`}
-            >
-              <Palette className="h-4 w-4" strokeWidth={1.5} /> Salvar alterações
-            </button>
-            <button onClick={reset} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground">
-              <RotateCcw className="h-4 w-4" strokeWidth={1.5} /> Redefinir
-            </button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {hasChanges ? "Alterações pendentes. Clique em salvar para confirmar." : "Nenhuma alteração pendente."}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Dica: use imagens quadradas (1:1) com fundo neutro para o melhor enquadramento.
-          </p>
         </div>
       </div>
+
+      {/* About */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Imagem Ambiente (Sobre)</div>
+          <div className="mt-3 flex aspect-square w-full max-w-sm items-center justify-center overflow-hidden rounded-3xl border border-gold/30 bg-card p-6 shadow-soft">
+            <img src={pendingAboutImage} alt="Ambiente" className="h-full w-full object-contain" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <Field label="URL da imagem Ambiente">
+            <input value={pendingAboutImage.startsWith("data:") ? "(arquivo enviado)" : pendingAboutImage} onChange={(e) => onAboutUrl(e.target.value)} className={inputCls} placeholder="https://..." />
+          </Field>
+          <div>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gold/50 px-4 py-2 text-sm text-foreground hover:bg-gold/10">
+              <ImageIcon className="h-4 w-4" strokeWidth={1.5} /> Enviar arquivo Ambiente
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => onAboutFile(e.target.files?.[0])} />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <button onClick={saveChanges} disabled={!hasChanges} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${hasChanges ? "btn-gold text-black" : "border border-border bg-muted/20 text-muted-foreground cursor-not-allowed"}`}>
+          <Palette className="h-4 w-4" strokeWidth={1.5} /> Salvar alterações
+        </button>
+        <button onClick={resetHero} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground">
+          <RotateCcw className="h-4 w-4" strokeWidth={1.5} /> Redefinir Hero
+        </button>
+        <button onClick={resetAbout} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground">
+          <RotateCcw className="h-4 w-4" strokeWidth={1.5} /> Redefinir Ambiente
+        </button>
+      </div>
+      <p className="mt-4 text-xs text-muted-foreground">
+        {hasChanges ? "Alterações pendentes. Clique em salvar para confirmar." : "Nenhuma alteração pendente."}
+      </p>
     </div>
   );
 }
+
